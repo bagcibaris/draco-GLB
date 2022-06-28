@@ -1,0 +1,17 @@
+{
+  "name": "ylcn",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@gltf-transform/core": "^2.1.7",
+    "@gltf-transform/extensions": "^2.1.7",
+    "draco3dgltf": "^1.5.2"
+  }
+}

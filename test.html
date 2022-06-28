@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>three.js webgl - loaders - Draco loader</title>
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+//bunları korumanın tek yolu mongo db gibi nosql üzerinde hexadecimal kodlarını tutmak fakat bunları alırken 
+<body>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script type="module" src="script.js"></script>
+    indexxx
+    <model-viewer alt="glb" src="./file.glb" ar ar-modes="webxr scene-viewer quick-look" environment-image="" poster="shared-assets/models/NeilArmstrong.webp" seamless-poster shadow-intensity="1" camera-controls enable-pan></model-viewer>
+</body>
+
+<!--
+"use strict";
+
+new function () {
+    var params, placeBtn = document.querySelector('#ar-destination'), btnShowAR = document.querySelector('#btn-show-ar'), langCode,
+        btnDesktopShowAR = document.querySelector('#btn-desktop-show-ar'), arSupport, viewerIframe = document.getElementById('viewer'),
+        arKitURL, arCoreURL, flixCdnDomain = window.location.hostname, common, viewerInteractions = {
+            'click': 0,
+            'mousewheel': 0,
+            'scroll': 0
+        }, retailersDictionary, btnHideAR = document.querySelector('#ar-modal-button'),
+        fullscreenBtn = document.getElementById('player-fullscreen-container'), modelWrap = document.getElementById('model-wrap'),
+        hexaFS = document.querySelector('#hexa-fs'), productJSON, isQA = false, isApproved = false, exitFsIcon, enterFsIcon, envVar,
+        linearActivity = document.querySelector('.linear-activity'), determinate = document.querySelector('.determinate'),
+        flixarlogo = document.querySelector('.flixarlogo');
+    // window.flixJsCallbacks = window.flixJsCallbacks || {};
+    // if (window.location.host == 'localhost:9000')
+    //     flixCdnDomain = window.location.host;
+    var Common = function () {
+        return {
+            getUrlParams: function (url) {
+                var queryString = {};
+                var query = '';
+                if (url) {
+                    if (url.indexOf('?') > -1) {
+                        query = decodeURIComponent(
+                            decodeURIComponent(url.substring(url.indexOf('?') + 1))
+                        );
+                    }
+                }
+                else {
+                    if (window.location.href.indexOf('?') > -1) {
+                        query = decodeURIComponent(
+                            decodeURIComponent(window.location.href.substring(window.location.href.indexOf('?') + 1))
+                        );
+                    }
+                    else {
+                        query = decodeURIComponent(
+                            decodeURIComponent(window.location.search.substring(1))
+                        );
+                    }
+                }
+                query = query.split('+').join(' ');
+                let vars = query.split('&');
+                for (let i = 0; i < vars.length; i++) {
+                    let pair = vars[i].split('=');
+                    if (typeof queryString[pair[0]] === 'undefined') {
+                        queryString[pair[0]] = pair[1] ? decodeURIComponent(pair[1]) : null;
+                    } else if (typeof queryString[pair[0]] === 'string') {
+                        let arr = [queryString[pair[0]], decodeURIComponent(pair[1])];
+                        queryString[pair[0]] = arr;
+                    } else {
+                        queryString[pair[0]].push(decodeURIComponent(pair[1]));
+                    }
+                }
+                return queryString;
+            },
+            isArKitSupport: function () {
+                // facebook browser:
+                if (window.navigator.userAgent.match('FBSN') && window.navigator.userAgent.match('FBSV')) return false;
+                var a = document.createElement("a");
+                return a.relList && a.relList.supports && a.relList.supports("ar");
+            },
+            isArCoreSupport: function () {
+                if (!window.chrome) return false;
+                var getAndroidVersion = function (ua) {
+                    ua = (ua || navigator.userAgent).toLowerCase();
+                    var match = ua.match(/android\s([0-9\.]*)/);
+                    return match ? match[1] : undefined;
+                };
+                var v = parseFloat(getAndroidVersion());
+                return !isNaN(v) && v >= 7;
+            },
+            getFileFromPath: function (path) {
+                return path.split('/').pop();
+            },
+            onMessage: function (event) {
+                if (event.origin && event.origin.indexOf(flixCdnDomain) > -1) {
+                    var msg = event.data;
+                    try {
+                        if (typeof msg !== 'object')
+                        msg = JSON.parse(event.data);
+                    } catch (e) {}
+                    if (typeof externalInterface[msg.action] === 'function' && msg.to == 1)
+                        externalInterface[msg.action](msg);
+                }
+            },
+            isFSActive: function () {
+                return (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+            },
+            onDocReady: function (cb) {
+                if (document.readyState === 'complete')
+                    cb();
+                else {
+                    document.addEventListener('readystatechange', () => {
+                        if (document.readyState === 'complete')
+                            cb();
+                    });
+                }
+            }
+        }
+    };
+
+    common = new Common();
+
+    var dragdata={
+        'en': {
+            'desktopText': 'Left click and drag to spin the product',
+            'mobileText': 'Zoom In/ Out or rotate the product using your fingers'
+        },
+        'al': {
+            'desktopText': 'Klikoni me butonin e majtë dhe tërhiqeni për të rrotulluar produktin',
+            'mobileText': 'Bëj zoom in/out ose rrotullo produktin duke përdorur gishtat'
+        },
+        'ar': {
+            'desktopText': 'انقر بزر الماوس الأيسر واسحب لتدوير المنتج',
+            'mobileText': 'قم بتكبير / تصغير أو تدوير المنتج باستخدام أصابعك'
+        },
+        'bg': {
+            'desktopText': 'Кликнете с левия бутон и приплъзнете, за да завъртите продукта',
+            'mobileText': 'Увеличете/намалете или завъртете, използвайки пръстите си'
+        },
+        'by': {
+            'desktopText': 'Пстрыкніце левую кнопку і цягніце для кручэння тавара',
+            'mobileText': 'Павялічвайце / памяншайце маштаб або круціце тавар, выкарыстоўваючы сэнсарнае кіраванне'
+        },
+        'cz': {
+            'desktopText': 'Levé kliknutí a potažení produkt roztočí',
+            'mobileText': 'Zoomujte nebo produkt otáčejte pohybem prsty'
+        },
+        'de': {
+            'desktopText': 'Linksklicken, um das Produkt zu bewegen',
+            'mobileText': 'Zoomen Sie herein/heraus oder drehen Sie das Produkt mit ihren Fingern'
+        },
+        'dk': {
+            'desktopText': 'Venstre klik og træk den til siden for at dreje produktet',
+            'mobileText': 'Zoom ind/Ud eller roter produktet med dine fingre'
+        },
+        'es': {
+            'desktopText': 'Haga clic  y arrastre para girar el producto',
+            'mobileText': 'Acerquése, aléjese  o gire el producto con los dedos'
+        },
+        'et': {
+            'desktopText': 'Toote keerutamiseks klõpsake vasakpoolse hiirenupuga ja lohistage',
+            'mobileText': 'Suumige sisse/välja või pöörake toodet sõrmedega'
+        },
+        'fi': {
+            'desktopText': 'Kierrä tuotetta napsauttamalla vasemmalla painikkeella ja raahaamalla',
+            'mobileText': 'Lähennä/loitonna tuotetta sormillasi'
+        },
+        'fr': {
+            'desktopText': 'Cliquez et déplacez le curseur pour faire tourner le produit',
+            'mobileText': 'Agrandissez/rétrécissez et tournez le produit à l\'aide de vos doigts'
+        },
+        'gr': {
+            'desktopText': 'Κάντε αριστερό κλικ και σύρετε για περιστροφή του προϊόντος',
+            'mobileText': 'Μεγέθυνση / σμίκρυνση ή περιστροφή του προϊόντος χρησιμοποιώντας τα δάχτυλά σας'
+        },
+        'hr': {
+            'desktopText': 'Pritisnite lijevu tipku miša i povucite za okretanje proizvoda',
+            'mobileText': 'Uvećajte / Umanjite ili rotirajte proizvod koristeći prste'
+        },
+        'hu': {
+            'desktopText': 'Kattints a bal egérgombbal, és húzd el a termék forgatásához',
+            'mobileText': 'Nagyíts fel/kicsinyíts le vagy az ujjak segítségével forgasd el a terméket'
+        },
+        'id': {
+            'desktopText': 'Klik kiri dan geser untuk memutar produk',
+            'mobileText': 'Dekatkan/Jauhkan tampilan atau putar produk menggunakan jari Anda'
+        },
+        'ja': {
+            'desktopText': '左クリックしてドラッグし、製品を回転させます',
+            'mobileText': '拡大/縮小したり、指を使って製品を回転させます'
+        },
+        'il': {
+            'desktopText': 'קרב\הרחק או סובב את המוצר בעזרת אצבעות',
+            'mobileText': 'כדי לסובב את המוצר יש ללחוץ על המקש השמאלי ולמשוך אותו'
+        },
+        'ir': {
+            'desktopText': 'برای چرخاندن محصول کلیک چپ کرده و آن را بکشید .',
+            'mobileText': 'شما می توانید با لمس صفحه با انگشتتان محصول را بزرگ تر ، کوچکتر ببینید و یا آن را در زاویۀ دلخواه بچرخانید.'
+        },
+        'it': {
+            'desktopText': 'Tieni premuto il tasto sinistro del mouse e trascina per ruotare il prodotto',
+            'mobileText': 'Usa le dita per zoomare o ruotare il prodotto '
+        },
+        'ko': {
+            'desktopText': '왼쪽 단추를 누르고 드래그하면 제품을 회전할 수 있습니다',
+            'mobileText': '손가락을 사용하여 제품을 확대/축소 또는 회전하십시오'
+        },
+        'lt': {
+            'desktopText': 'Pasukti produktą, paspaukite kairįjį pelės mygtuką ir vilkite',
+            'mobileText': 'Artinkite / tolinkite arba pasukite produktą'
+        },
+        'lv': {
+            'desktopText': 'Noklikšķiniet ar peles kreiso taustiņu un velciet, lai pagrieztu produktu',
+            'mobileText': 'Ar pirkstiem tuviniet/tāliniet vai pagrieziet produktu'
+        },
+        'ml': {
+            'desktopText': 'Притиснете лев клик и влечете за да го ротирате производот',
+            'mobileText': 'Доближете/Оддалечете или ротирајте го производот со Вашите прсти'
+        },
+        'my': {
+            'desktopText': 'Klik kiri dan tarik untuk memusing produk',
+            'mobileText': 'Zoom Masuk/Keluar atau pusing produk menggunakan jejari anda'
+        },
+        'nl': {
+            'desktopText': 'Klik met de linkermuisknop en sleep de cursor om het product te draaien',
+            'mobileText': 'zoom in/ uit of draai het product met je vingers'
+        },
+        'no': {
+            'desktopText': 'Venstreklikk og dra for å spinne produktet',
+            'mobileText': 'Zoom inn/ut eller roter produktet med fingrene'
+        },
+        'ph': {
+            'desktopText': 'I-click sa kaliwa at igalaw upang umikot ang produkto',
+            'mobileText': 'Palakihin/Paliitin o iikot ang produkto gamit ang daliri'
+        },
+        'pl': {
+            'desktopText': 'Kliknij lewym przyciskiem i przeciągnij, aby obrócić',
+            'mobileText': 'Powiększaj/pomniejszaj lub obróć produkt za pomocą palców'
+        },
+        'pt': {
+            'desktopText': 'Clique com o botão esquerdo e arraste para girar o produto',
+            'mobileText': 'Aumente / diminua o zoom ou gire o produto usando os dedos'
+        },
+        'rs': {
+            'desktopText': 'Pritisnite levi taster miša i prevucite da biste rotirali proizvod',
+            'mobileText': 'Uvećajte / Umanjite ili rotirajte proizvod koristeći prste'
+        },
+        'ro': {
+            'desktopText': 'Faceți clic stânga și trageți pentru a învârti produsul',
+            'mobileText': 'Apropiați/Distanțați produsul folosind gesturile cu degetele'
+        },
+        'ru': {
+            'desktopText': 'Слева нажмите на мышь и перетащите, чтобы вращать продукт вокруг ',
+            'mobileText': 'Увеличьте/Уменьшите масштаб или поверните продукт пальцами'
+        },
+        'sk': {
+            'desktopText': 'Ľavé kliknutie a potiahnutie produkt roztočí',
+            'mobileText': 'Zoomujte alebo produkt otáčajte pohybom prstami'
+        },
+        'sl': {
+            'desktopText': 'Kliknite levi gumb miške in povlecite, da zavrtite izdelek',
+            'mobileText': 'S prsti na zaslonu povečajte/pomanjšajte ali zavrtite izdelek'
+        },
+        'sv': {
+            'desktopText': 'Vänsterklicka och dra för att snurra produkten',
+            'mobileText': 'Zooma in/ut eller rotera produkten med fingrarna'
+        },
+        'ti': {
+            'desktopText': 'คลิกซ้ายแล้วลากเพื่อหมุนสินค้า',
+            'mobileText': 'ซูมเข้า/ออกหรือหมุนสินค้าด้วยนิ้วของคุณ'
+        },
+        'tr': {
+            'desktopText': 'Ürünü döndürmek için sola tıklayın ve sürükleyin',
+            'mobileText': 'Parmaklarınız kullanarak ürünü yakınlaştıp uzaklaştırın veya çevirin'
+        },
+        'ua': {
+            'desktopText': 'Клацніть ліву кнопку і тягніть для обертання товару',
+            'mobileText': 'Збільшуйте / зменшуйте масштаб або обертайте товар, використовуючи сенсорне управління '
+        },
+        'vn': {
+            'desktopText': 'Nhấn bên trái và kéo để quay sản phẩm',
+            'mobileText': 'Phóng to/ Thu nhỏ hoặc xoay sản phẩm bằng ngón tay của bạn'
+        },
+        'zh': {
+            'desktopText': '左键单击并拖动以旋转产品',
+            'mobileText': '使用手指放大/缩小或旋转产品'
+        }
+    };
+
+
+    var qrPopUpData = {
+        'en': {
+            'title': 'Place in your space',
+            'mainText': 'View a life-size version of this product in your room by scanning the QR code',
+            'close': 'Close',
+        },
+        'al': {
+            'title': 'Vendosni ne hapësirën tuaj',
+            'mainText': 'Shikoni një version real të këtij produkti në dhomën tuaj duke skanuar kodin QR',
+            'close': 'Mbylle',
+        },
+        'ar': {
+            'title': 'ضع المنتج في مساحتك الخاصة',
+            'mainText': 'امسح رمز الاستجابة السريعة (QR code) لرؤية المنتج بحجمه الحقيقي ضمن غرفتك',
+            'close': 'إغلاق',
+        },
+        'bg': {
+            'title': 'Поставете в стая',
+            'mainText': 'Прегледайте този продукт в истински размери в стаята си, като сканирате QR кода',
+            'close': 'Затваряне',
+        },
+        'by': {
+            'title': 'Размясціце ў сваім памяшканні',
+            'mainText': 'Отсканируйте QR-код, для таго, каб адлюстраваць дадзены тавар у вашай пакояў у натуральную велічыню.',
+            'close': 'Зачыніць',
+        },
+        'cz': {
+            'title': 'Prohlížet živě',
+            'mainText': 'Prohlédněte si produkt v životní velikosti ve svém pokoji naskenováním QR kódu',
+            'close': 'Zavřít',
+        },
+        'de': {
+            'title': 'Platzieren Sie das Produkt in Ihrem Space',
+            'mainText': 'Um eine lebensgroße Version des Produkts zu betrachten, scannen Sie bitte den QR Code',
+            'close': 'Schließen',
+        },
+        'dk': {
+            'title': 'Placer i rum',
+            'mainText': 'Se en livsstørrelse version af produktet i dit rum ved at scanne QR koden',
+            'close': 'Luk',
+        },
+        'es': {
+            'title': 'Coloca en tu espacio',
+            'mainText': 'Vea en tamaño real el producto desde su habitación escaneando el código QR',
+            'close': 'Cerrar',
+        },
+        'et': {
+            'title': 'Asetage see oma tuppa',
+            'mainText': 'Vea en tamaño real el producto desde su habitación escaneando el código QR',
+            'close': 'Cerrar',
+        },
+        'fi': {
+            'title': 'Aseta tilaasi',
+            'mainText': 'Katsele tätä tuotetta täysikokoisena huoneessasi skannaamalla QR-koodi',
+            'close': 'Sulje',
+        },
+        'fr': {
+            'title': 'Voir chez vous',
+            'mainText': 'Scannez le code QR pour visualiser une version du produit à taille réelle chez vous',
+            'close': 'Fermer',
+        },
+        'gr': {
+            'title': 'Τοποθετήστε στο χώρο σας',
+            'mainText': 'Δείτε μιαπραγματική έκδοση μεγέθους αυτού του προϊόντος στο δωμάτιό σας σαρώνοντας τον κωδικό QR',
+            'close': 'Κλείσε',
+        },
+        'hr': {
+            'title': 'Pogledajte uživo',
+            'mainText': 'Pregledajte verziju ovog proizvoda u prirodnoj veličini u svojoj sobi skeniranjem QR koda',
+            'close': 'Zatvorite',
+        },
+        'hu': {
+            'title': 'Helyezd be a helyedre',
+            'mainText': 'Tekintsd meg a termék életnagyságú változatát a szobádban a QR-kód beolvasásával',
+            'close': 'Bezárás',
+        },
+        'id': {
+            'title': 'Tempatkan di ruangan Anda',
+            'mainText': 'Lihat produk ini dalam ukuran sesungguhnya di ruangan Anda dengan cara memindai kode QR',
+            'close': 'Tutup',
+        },
+        'ja': {
+            'title': 'あなたのスペースに配置します',
+            'mainText': 'QRコードをスキャンして、お部屋でこの製品の等身大バージョンを表示します',
+            'close': '閉じる ',
+        },
+        'il': {
+            'title': 'מיקום בחלל אישי',
+            'mainText': 'אנא סרוק את QR-קוד לצפייה בגרסת המוצר בגודל טבעי בחדר אישי שלך',
+            'close': 'סגור',
+        },
+        'ir': {
+            'title': 'محصول مورد نظر خود را در فضای دلخواه خود قرار دهید.',
+            'mainText': 'برای مشاهدۀ اندازۀ واقعی این محصول در اتاق خودتان (اتاق کارتان) QR کد محصول را اسکن کنید.',
+            'close': 'بستن',
+        },
+        'it': {
+            'title': 'Visualizza a casa tua',
+            'mainText': 'Visualizza il prodotto in dimensioni reali a casa tua scansionando il codice QR',
+            'close': 'Chiudi',
+        },
+        'ko': {
+            'title': '공간에 놓으려면 누르십시오',
+            'mainText': 'QR코드를 스캔해서 방 안에서 제품의 사이즈를 확인하십시오',
+            'close': '닫기',
+        },
+        'lt': {
+            'title': 'Pastatyti savo erdvėje',
+            'mainText': 'Apžiūrėkiti produktą savo kambaryje nuskskanuokite QR kodą',
+            'close': 'Uždaryti',
+        },
+        'lv': {
+            'title': 'Ievietot telpā',
+            'mainText': 'Apskatiet šī produkta dabiskā izmēra versiju savā telpā, skenējot QR kodu',
+            'close': 'Tuvu',
+        },
+        'ml': {
+            'title': 'Поставете го во Вашиот простор',
+            'mainText': 'Видете ја вистинската големина на производот во Вашата соба со скенирање на QR кодот',
+            'close': 'блиски',
+        },
+        'my': {
+            'title': 'Letak ke ruang anda',
+            'mainText': 'Lihat versi saiz sebenar produk ini di dalam bilik anda dengan mengimbas kod QR',
+            'close': 'tutup',
+        },
+        'nl': {
+            'title': 'Plaats in je ruimte',
+            'mainText': 'Bekijk het product in ware grootte in jouw kamer door de QR code te scannen',
+            'close': 'Sluiten',
+        },
+        'no': {
+            'title': 'Plasser I rommet ditt',
+            'mainText': 'Se produktet I naturlig størrelse I ditt rom ved å scanne QR koden',
+            'close': 'Lukk',
+        },
+        'ph': {
+            'title': 'Ilagay sa iyong espasyo',
+            'mainText': 'Makakita ng life-size na bersyon ng produkto sa iyong room sa pamamagitan ng pag-scan sa QR code',
+            'close': 'Malapit na',
+        },
+        'pl': {
+            'title': 'Zobacz w domu',
+            'mainText': 'Zeskanuj kod QR aby  zobaczyć naturalnej wielkości wersję tego produktu w Twoim pomieszczeniu',
+            'close': 'Zamknij',
+        },
+        'pt': {
+            'title': 'Posicione no seu espaço',
+            'mainText': 'Escaneie o código QR para ver uma versão em tamanho real deste produto em sua casa',
+            'close': 'Fechar',
+        },
+        'rs': {
+            'title': 'Pogledajte uživo',
+            'mainText': 'Pregledajte verziju ovog proizvoda u punoj veličini u svojoj sobi skeniranjem QR koda',
+            'close': 'Близу',
+        },
+        'ro': {
+            'title': 'Pune-l în casă',
+            'mainText': 'Vedeți o versiune reală a acestui produs în camera dvs. scanând codul QR',
+            'close': 'Închide',
+        },
+        'ru': {
+            'title': 'Поставить на место',
+            'mainText': 'Просмотрите версии этого продукта в его реальной величине в вашей комнате путем сканирования QR кода',
+            'close': 'Закрыть',
+        },
+        'sk': {
+            'title': 'Pozrieť naživo',
+            'mainText': 'Pozrite si produkt v životnej veľkosti vo svojej izbe naskenovaním QR kódu',
+            'close': 'Zatvoriť',
+        },
+        'sl': {
+            'title': 'Postavite v vaš prostor',
+            'mainText': 'Slikajte QR kodo in si ta izdelek oglejte v realni velikosti v vaši sobi',
+            'close': 'Blizu',
+        },
+        'sv': {
+            'title': 'Placera i ditt utrymme',
+            'mainText': 'Visa en fullskalig version av den här produkten I ditt rum genom att skanna QR-koden',
+            'close': 'Stäng',
+        },
+        'ti': {
+            'title': 'วางบนพื้นที่ของคุณ',
+            'mainText': 'ดูเวอร์ชั่นขนาดจริงของสินค้าตัวนี้ในห้องของคุณโดยการสแกน QR โค้ด',
+            'close': 'ปิด',
+        },
+        'tr': {
+            'title': 'Mekanınıza yerleştirin',
+            'mainText': 'QR kodu taratarak ürünün gerçek boyutlu görünümünü odanızda görüntüleyin',
+            'close': 'Kapat',
+        },
+        'ua': {
+            'title': 'Розташуйте в своєму приміщенні',
+            'mainText': 'Відскануте QR-код, для того, щоб відобразити цей товар у вашій кімнат в натуральну величину.   ',
+            'close': 'Kapat',
+        },
+        'vn': {
+            'title': 'Đặt vào không gian',
+            'mainText': 'Xem bản kích thước thực của sản phẩm này trong phòng bạn bằng cách quét mã QR',
+            'close': 'đóng',
+        },
+        'zh': {
+            'title': '点击放置在您的空间',
+            'mainText': '扫描二维码，查看该产品在你的房间里的尺寸',
+            'close': '关闭',
+        }
+    };
+
+    var errMsgData = {
+        "en": {
+            "exclamation": "Oops!",
+            "title": "Something went wrong",
+            "desc": "We appear to be having some technical difficulties loading this model",
+            "compatTitle": "Your device isn't compatible with augmented reality",
+            "compatList": "View compatible devices here"
+        },
+        "ar": {
+            "exclamation": "Oops!",
+            "title": "Something went wrong",
+            "desc": "We appear to be having some technical difficulties loading this model",
+            "compatTitle": "Your device isn't compatible with augmented reality",
+            "compatList": "View compatible devices here"
+        },
+        "bg": {
+            "exclamation": "Ами сега!",
+            "title": "Нещо се обърка",
+            "desc": "Изглежда, че имаме технически затруднения със зареждането на този модел",
+            "compatTitle": "Устройството Ви не е съвместимо с добавената реалност",
+            "compatList": "Вижте съвместимите устройства тук"
+        },
+        "cz": {
+            "exclamation": "Jejda!",
+            "title": "Něco se pokazilo",
+            "desc": "Zdá se, že při načítání tohoto modelu máme nějaké technické potíže",
+            "compatTitle": "Vaše zařízení není kompatibilní s rozšířenou realitou",
+            "compatList": "Zde si můžete prohlédnout kompatibilní zařízení"
+        },
+        "de": {
+            "exclamation": "Hoppla!",
+            "title": "Hier ist etwas schief gelaufen.",
+            "desc": "Wir scheinen technische Schwierigkeiten beim Laden dieses Modells zu haben.",
+            "compatTitle": "Ihr Gerät ist nicht mit Augmented Reality kompatibel.",
+            "compatList": "Kompatible Geräte hier ansehen"
+        },
+        "dk": {
+            "exclamation": "Hov!",
+            "title": "Noget gik galt",
+            "desc": "Vi synes at have nogle tekniske vanskeligeder med at uploade denne model",
+            "compatTitle": "Din enhed kan ikke håndtere augmented reality",
+            "compatList": "Vis egnede enheder her"
+        },
+        "es": {
+            "exclamation": "¡Vaya!",
+            "title": "Algo ha salido mal",
+            "desc": "Parece que estamos experimentando problemas técnicos al cargar este modelo",
+            "compatTitle": "Su dispositivo no es compatible con la realidad aumentada",
+            "compatList": "Consulte aquí los dispositivos compatibles"
+        },
+        "fi": {
+            "exclamation": "Hups!",
+            "title": "Jokin meni vikaan",
+            "desc": "Tämän mallin latauksessa on teknisiä ongelmia",
+            "compatTitle": "Laitteesi ei tue lisättyä todellisuutta",
+            "compatList": "Tarkista yhteensopivat laitteet tästä"
+        },
+        "fr": {
+            "exclamation": "Oups!",
+            "title": "Il y a un soucis",
+            "desc": "Nous avons des difficultés techniques pour charger ce modèle",
+            "compatTitle": "Votre appareil n'est pas compatible avec la réalité augmentée",
+            "compatList": "Liste des appareils compatibles ici"
+        },
+        "hr": {
+            "exclamation": "Ajoj!",
+            "title": "Došlo je do pogreške",
+            "desc": "Čini se da imamo tehničkih poteškoća s učitavanjem ovog modela",
+            "compatTitle": "Vaš uređaj ne podržava proširenu stvarnost",
+            "compatList": "Vidi kompatibilne uređaje ovdje"
+        },
+        "hu": {
+            "exclamation": "Hoppá!",
+            "title": "Valami baj történt",
+            "desc": "Úgy tűnik, hogy a modell betöltése során műszaki nehézségekbe ütköztük",
+            "compatTitle": "Az eszközöd nem kompatibilis a kiterjesztett valósággal.",
+            "compatList": "Itt tudod megtekinteni a kompatibilis eszközöket"
+        },
+        "id": {
+            "exclamation": "Ups!",
+            "title": "Ada kesalahan",
+            "desc": "Tampaknya kami mengalami kesulitan teknis memuat model ini",
+            "compatTitle": "Perangkat Anda tidak kompatibel dengan realitas tertambah",
+            "compatList": "Lihat perangkat yang kompatibel di sini"
+        },
+        "it": {
+            "exclamation": "Oops!",
+            "title": "Qualcosa è andato storto",
+            "desc": "Ci sono stati dei problemi tecnici durante il caricamento del modello 3D",
+            "compatTitle": "Il tuo dispositivo non è compatibile con la realtà aumentata",
+            "compatList": "Vedi i dispositivi compatibili"
+        },
+        "lt": {
+            "exclamation": "Oi!",
+            "title": "Kažkas negerai",
+            "desc": "Panašu, kad įkeliant šį modelį kilo techninių sunkumų",
+            "compatTitle": "Jūsų įrenginys nesuderinamas su papildytąja realybe",
+            "compatList": "Peržiūrėkite suderinamus įrenginius čia"
+        },
+        "lv": {
+            "exclamation": "Atvainojiet!",
+            "title": "Ir radusies kļūda",
+            "desc": "Ielādējot šo modeli, mums ir radušās tehniskas problēmas",
+            "compatTitle": "Jūsu ierīce nav saderīga ar paplašināto realitāti",
+            "compatList": "Skatiet saderīgu ierīču sarakstu šeit"
+        },
+        "nl": {
+            "exclamation": "Oeps!",
+            "title": "Er ging iets fout",
+            "desc": "Het lijkt erop dat we wat technische problemen hebben bij het laden van dit model",
+            "compatTitle": "Uw toestel is niet compatibel met toegevoegde realiteit",
+            "compatList": "Bekijk hier compatibele toestellen"
+        },
+        "no": {
+            "exclamation": "Oops!",
+            "title": "Noe gikk galt",
+            "desc": "Det ser ut som vi har tekniske problemer med lasting av denne modellen",
+            "compatTitle": "Din enhet er ikke kompatibel med Augmented Reality",
+            "compatList": "Se kompatible enheter her"
+        },
+        "pl": {
+            "exclamation": "Ups!",
+            "title": "Coś poszło nie tak",
+            "desc": "Podczas ładowania tego modelu występują problemy techniczne",
+            "compatTitle": "Twoje urządzenie nie jest kompatybilne z rozszerzoną rzeczywistością",
+            "compatList": "Listę kompatybilnych urządzeń znajdziesz tutaj"
+        },
+        "pt": {
+            "exclamation": "Oops!",
+            "title": "Aconteceu algo de errado",
+            "desc": "Estamos a ter algumas dificuldades técnicas ao carregar este modelo",
+            "compatTitle": "O seu smartphone nao é compatível com Realidade Aumentada",
+            "compatList": "Ver smartphones compatíveis"
+        },
+        "rs": {
+            "exclamation": "Ajoj!",
+            "title": "Došlo je do pogreške",
+            "desc": "Čini se da imamo tehničkih poteškoća s učitavanjem ovog modela",
+            "compatTitle": "Vaš uređaj ne podržava proširenu stvarnost",
+            "compatList": "Vidi kompatibilne uređaje ovdje"
+        },
+        "ro": {
+            "exclamation": "Hopa!",
+            "title": "Ceva nu este în regulă",
+            "desc": "Se pare că avem anumite dificultăți tehnice la încărcarea acestui model",
+            "compatTitle": "Dispozitivul dvs. nu este compatibil cu realitatea augmentată",
+            "compatList": "Vizualizați dispozitivele compatibile aici"
+        },
+        "ru": {
+            "exclamation": "Упс!",
+            "title": "Что-то пошло не так",
+            "desc": "Похоже, у нас возникают некоторые технические трудности при загрузке этой модели",
+            "compatTitle": "Ваше устройство не совместимо с дополненной реальностью",
+            "compatList": "Посмотреть совместимые устройства здесь"
+        },
+        "sk": {
+            "exclamation": "Ejha!",
+            "title": "Vyskytol sa nejaký problém",
+            "desc": "Zdá sa, že sa pri načítaní tohto modelu vyskytli určité technické problémy",
+            "compatTitle": "Vaše zariadenie nie je kompatibilné s rozšírenou realitou",
+            "compatList": "Zobraziť kompatibilné zariadenia tu"
+        },
+        "sv": {
+            "exclamation": "Oops!",
+            "title": "Something went wrong",
+            "desc": "We appear to be having some technical difficulties loading this model",
+            "compatTitle": "Your device isn't compatible with augmented reality",
+            "compatList": "View compatible devices here"
+        },
+        "tr": {
+            "exclamation": "Hop!",
+            "title": "Bir sorun oluştu",
+            "desc": "Bu modeli yüklerken bazı teknik zorluklar yaşıyoruz",
+            "compatTitle": "Cihazınız artırılmış gerçeklik ile uyumlu değil",
+            "compatList": "Uyumlu cihazları burada görebilirsiniz"
+        }
+    };
+
+    var flixCheckIso= function(language_to_search){        
+        var languages = {            
+            'ar': ['ar','a1','ae','bh','iq','jo','kw','l3','om','qa'],
+            'al': ['al'],
+            'bg': ['bg'],
+            'by': ['by'],
+            'cz': ['cz'],
+            'de': ['de','d5','at','l1','s3','s4'],
+            'dk': ['dk','da'],
+            'en': ['en','a2','ap','au','b1','b2','b3','b5','b6','b7','b8','b9','c1','c2','c5','c6','c7','c8','c9','d1','d2','d3','d4','d5','d6','d7','d8','d9','e1','e2','e3','e4','e5','e6','e7','e8','e9','eg','eu','f9','gh','h1','ie','in','j1','k1','ke','lb','m1','m2','m3','nz','ng','o1','p1','p2','pk','q1','r1','r2','s1','s2','s7','t3','t4','t5','u1','u3','us','za'],
+            'es': ['es','bo','cl','cr','do','f4','f5','f6','f7','f8','ec','gu','hn','jm','mx','ni','pa','pe','py','t2','tt','uy'],
+            'et': ['et'],
+            'fi': ['fi'],
+            'fr': ['fr','a3','b4','c4','l2','ma','s5'],
+            'gr': ['gr'],
+            'hu': ['hu'],
+            'hr': ['hr','g1'],
+            'id': ['id'],
+            'il': ['il'],
+            'ir': ['ir'],
+            'it': ['it','s6'],
+            'ja': ['ja'],
+            'lv': ['lv'],
+            'ko': ['ko'],
+            'lt': ['lt'],
+            'ml': ['ml'],
+            'my': ['my'],
+            'nl': ['nl','be'],
+            'no': ['no'],
+            'pl': ['pl'],
+            'ph': ['ph'],
+            'pt': ['pt','br'],
+            'ro': ['ro'],
+            'rs': ['rs'],
+            'ru': ['ru','kz','u2'],
+            'sk': ['sk'],
+            'sl': ['sl'],
+            'sv': ['sv'],
+            'ti': ['ti'],
+            'tr': ['tr'],
+            'ua': ['ua'],
+            'vn': ['vn'],
+            'zh': ['zh','hk','tw']
+        };
+
+        var found_iso_code = '';
+        for (var iso_code in languages) {
+            if(iso_code === language_to_search || languages[iso_code].indexOf(language_to_search) > -1) {
+                found_iso_code = iso_code;                    
+                break;
+            }
+        }
+        
+        return found_iso_code
+    }
+
+    var setRetailersDictionary = function () {
+        var demoHarveyNormanNz = {
+            modalContainerInPlayer: {
+                css: {
+                    'background': 'linear-gradient(135deg,  rgba(16,93,152,1) 0%,rgba(16,93,152,1) 44%,rgba(6,119,187,1) 100%)'
+                }
+            },
+            modalButtonInPlayer: {
+                css: {
+                    'background': 'linear-gradient(135deg,  rgba(16,93,152,1) 0%,rgba(16,93,152,1) 44%,rgba(6,119,187,1) 100%)'
+                }
+            }
+        }
+        retailersDictionary = {
+            '11676': {
+                btnShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/AR_EN.gif'
+                },
+                btnDesktopShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/AR_EN.gif'
+                }
+            },
+            '2754': {
+                btnShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/2754/AR.gif'
+                },
+                btnDesktopShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/2754/AR.gif'
+                }
+            },
+            '16024': {
+                btnShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/16024/AR.gif',
+                    height: '',
+                    width: '65'
+                },
+                btnDesktopShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/16024/AR.gif',
+                    height: '',
+                    width: '65'
+                }
+            },
+            '2162': {
+                btnShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/2162/AR.gif'
+                },
+                btnDesktopShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/2162/AR.gif'
+                }
+            },
+            'demo-currys-staging': {
+                btnShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/demo-currys-staging/AR.gif'
+                },
+                btnDesktopShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/demo-currys-staging/AR.gif'
+                }
+            },
+            'a8934900-3812-11e8-b467-0ed5f89f718b': {
+                btnShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/a8934900-3812-11e8-b467-0ed5f89f718b/AR.gif'
+                },
+                btnDesktopShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/a8934900-3812-11e8-b467-0ed5f89f718b/AR.gif'
+                }
+            },
+            '145': {
+                btnShowAR: {
+                    src: '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/145/AR.gif'
+                }
+            },
+            'e1dcaf5a-2ca9-415b-b40f-92c15e0f0ed6': {
+                modalContainerInPlayer: {
+                    css: {
+                        'background': 'black'
+                    }
+                },
+                modalButtonInPlayer: {
+                    css: {
+                        'background': 'black'
+                    }
+                }
+            },
+            'demo-harvey-norman-nz-staging': demoHarveyNormanNz,
+            'e6ac2e64-5683-472d-8eaa-13cad34a0005': demoHarveyNormanNz
+        };
+    }
+
+    var loggin = function (event_type, event_description) {
+        var pnurl = '', mpn = '';
+
+        var parsePage = function (d) {
+            if (!d) return '';
+            var
+                qSelectPresent = !(!!document.all && !document.querySelector),
+                data = {}, df, br, hasOwn = {}.hasOwnProperty, get = '',
+                canonicalCheck, s, found = '', h, title = '', i, j,
+                found = pnurl;
+            for (var p in data) {
+                if (hasOwn.call(data, p)) d[p] = data[p];
+            }
+            for (var key in d) {
+                if (hasOwn.call(d, key)) {
+                    get += '&' + key + '=' + encodeURIComponent(d[key]);
+                }
+            }
+            return get;
+        };
+        var getUrlParameter = function (param) {
+            return params[param];
+        }
+        if (getUrlParameter('pn'))
+            pnurl = getUrlParameter('pn');
+        pnurl = pnurl.replace(/\|and/g, '&');
+        pnurl = pnurl.replace(/\|for/g, '//');
+        pnurl = pnurl.replace(/\|que/g, '?');
+        pnurl = pnurl.replace(/\|dub/g, ':');
+        pnurl = pnurl.replace(/\|is/g, '=');
+        pnurl = pnurl.replace(/\|hash/g, '#');
+        pnurl = pnurl.replace(/\|per/g, '%');
+        if (getUrlParameter('mpn'))
+            mpn = getUrlParameter('mpn')
+        mpn = mpn.replace(/\|and/g, '&');
+        mpn = mpn.replace(/\|for/g, '//');
+        mpn = mpn.replace(/\|que/g, '?');
+        mpn = mpn.replace(/\|dub/g, ':');
+        mpn = mpn.replace(/\|is/g, '=');
+        mpn = mpn.replace(/\|hash/g, '#');
+        mpn = mpn.replace(/\|per/g, '%');
+        if (!window.flixJsCallbacks) {
+            var flixJsCallbacks = {
+                _loadCallback: null,
+                _loadInpageCallback: null,
+                _loadMinisiteCallback: null,
+                _loadNoshowCallback: null
+            };
+            var getFlixCallback = function () {
+                return flixJsCallbacks;
+            };
+            window.flixJsCallbacks = getFlixCallback();
+        }
+        if (getUrlParameter('gvid') && getUrlParameter('gvid').length > 0 && window.flixJsCallbacks) {
+            window.flixJsCallbacks.gvid = getUrlParameter('gvid')
+        }
+
+
+
+        var
+            data = {
+                arid: getUrlParameter('arid') || '',
+                p: getUrlParameter('p') || '',
+                d: getUrlParameter('d') || '', //overwritten by data-flix-distributor
+                l: getUrlParameter('l') || 'en',
+                et: event_type || 'page',
+                ed: event_description.toLowerCase() || '3d',
+                gvid: '',
+                sid: getUrlParameter('sid') || '',
+                br: getUrlParameter('br') || '',
+                price: getUrlParameter('pr') || '',
+                currency: getUrlParameter('cur') || '',
+                ref: '',
+                pn: pnurl || document.referrer || '',
+                ti: '',
+                mpn: getUrlParameter('mpn') || '',
+                ean: getUrlParameter('ean') || '',
+                type:'3dfw'
+            },
+            d = new Date(),
+            t = '',
+            _base = '//media.flixcar.com/3dfw/log.gif'
+            ;
+
+
+        d.setMinutes(d.getTimezoneOffset());
+
+        if (!window.flixJsCallbacks.gvid) {
+            var ticks = 3;
+            (function threeTicks() {
+                if (window.flixJsCallbacks && typeof window.flixJsCallbacks.gvid == 'undefined' && ticks) {
+                    setTimeout(function () {
+                        ticks--;
+                        threeTicks();
+                    }, 100);
+                }
+                else {
+                    (function () {
+                        if (document.getElementById('data-flix-t-script')) return;
+                        window['flixgvid'] = function (obj) {
+                            try {
+                                delete window['flixgvid'];
+                                window.flixJsCallbacks = window.flixJsCallbacks || {};
+                                window.flixJsCallbacks['gvid'] = obj['gvid'];
+
+                                data.ut = d.getTime();
+                                data.gvid = (window.flixJsCallbacks && window.flixJsCallbacks.gvid) ? window.flixJsCallbacks.gvid : '';
+
+                                var url = _base + "?m=y";
+                                url += parsePage(data);
+
+                                if (getUrlParameter('ab')) {
+                                    data.ab = "&ab=" + getUrlParameter('ab') + "&abr=" + getUrlParameter('abr') + "&abid=" + getUrlParameter('abid');
+                                    url += data.ab;
+                                }
+                                if(location.href.search('flix-qa')!=-1)
+                                    console.log(url)
+
+                                if (typeof window.flixJsCallbacks.imgCache === 'undefined') { window.flixJsCallbacks.imgCache = {}; }
+                                var track = 'img_' + (new Date).getTime();
+
+                                if(getUrlParameter('d') && getUrlParameter('d')!=''){
+                                    //new tracking
+                                    if(typeof flixtracking!='undefined')
+                                        flixtrack(event_type, event_description) 
+                                    
+                                }
+                            } catch (e) { }
+                        };
+
+                        var _fscript = document.createElement('script');
+                        _fscript.setAttribute("type", "text/javascript");
+                        _fscript.setAttribute("src", "https://prod.flixgvid.flix360.io/");
+                        _fscript.setAttribute("async", "true");
+                        _fscript.id = "data-flix-t-script";
+                        document.getElementsByTagName('head')[0].appendChild(_fscript);
+                    }());
+                }
+            }());
+        }
+
+
+        if (window.flixJsCallbacks.gvid) {
+            data.ut = d.getTime();
+            data.gvid = (window.flixJsCallbacks && window.flixJsCallbacks.gvid) ? window.flixJsCallbacks.gvid : '';
+            var url = _base + "?m=y";
+            url += parsePage(data);
+
+            if (getUrlParameter('ab')) {
+                data.ab = "&ab=" + getUrlParameter('ab') + "&abr=" + getUrlParameter('abr') + "&abid=" + getUrlParameter('abid');
+                url += data.ab;
+            }
+
+            if(location.href.search('flix-qa')!=-1)
+                console.log(url)
+
+            if (typeof window.flixJsCallbacks.imgCache === 'undefined') { window.flixJsCallbacks.imgCache = {}; }
+            var track = 'img_' + (new Date).getTime();
+
+            if(getUrlParameter('d') && getUrlParameter('d')!=''){
+                //new tracking      
+                if(typeof flixtracking!='undefined')
+                    flixtrack(event_type, event_description) 
+                
+            }
+        }
+
+        
+
+    }
+
+    var externalInterface = {
+        'onModelInteraction': function (obj) {
+            var type = obj.data.type;
+            if (type === 'wheel' || type === 'rotate')
+                type = 'click';
+            else if (type === 'zoom')
+                type = 'mousewheel';
+
+            
+            if (type && typeof viewerInteractions[type] === 'number' && !viewerInteractions[type]) {
+                viewerInteractions[type]++;
+                
+                switch (type) {
+                    case 'click': {
+                        loggin('media', 'rotation');
+                        break;
+                    }
+                    case 'scroll':
+                    case 'mousewheel': {
+                        loggin('media', 'zoom');
+                        break;
+                    }
+                }
+            }
+        },
+        'setLoadingPercentage': function (obj) {
+            if(location.href.search('flix-qa')!=-1)
+                console.log('Percentage', obj.data);
+            determinate.style.width = obj.data + '%';
+        },
+        'viewerFullyLoaded': function () {
+            if(location.href.search('flix-qa')!=-1)
+                console.log('viewerFullyLoaded');
+            threefwtimer();
+            toggleLoader(false);
+            // fire impressiong log when 3dfw is loaded
+            loggin('impression', 'gltf-loaded');
+
+            
+        }
+    }
+
+    var lastt, tdiff;
+    var threefwtimer=function(event){
+
+        if (lastt) {
+            tdiff = Date.now() - lastt;
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('launch' ,'3dfw_time_'+tdiff)
+            
+            loggin('launch', '3dfw_time_'+tdiff);
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('3dfw timer stop- '+event+'-'+tdiff) 
+        } 
+        else { 
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('3dfw timer start')                
+        }
+        lastt = Date.now();            
+    }
+
+    var arlastt, artdiff
+    var artimer=function(event){
+        if(location.href.search('flix-sqa')!=-1)
+            console.log('artimer');       
+        if (arlastt && arlastt!=0) {
+            artdiff = Date.now() - arlastt;
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('launch' ,'ar_time_'+artdiff);
+            
+            loggin('launch', 'ar_time_'+artdiff);
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('ar timer stop- '+event+'-'+artdiff); 
+            
+            arlastt=0;
+        } 
+        else if(arlastt!=0){ 
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('ar timer start')   
+
+            document.addEventListener('visibilitychange', function(state, type){visibilitychange(state, type)});                    
+            
+            arlastt = Date.now();   
+        }                 
+    }
+
+    var dwelllastt, dwelltdiff
+    var ardwell=function(event){
+        if(location.href.search('flix-sqa')!=-1)
+            console.log('ardwell')      
+        if (dwelllastt && dwelllastt!= 0) {
+            dwelltdiff = Date.now() - dwelllastt;
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('dwell' ,'ar_time_'+dwelltdiff)
+            
+            loggin('dwelltime', 'ar_time_'+dwelltdiff);
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('ar dwelltimer stop- '+event+'-'+dwelltdiff) 
+
+            dwelllastt = 0;   
+        } 
+        else if(dwelllastt!= 0){ 
+            if(location.href.search('flix-sqa')!=-1)
+                console.log('ar timer start')   
+
+            document.addEventListener('visibilitychange', visibilitychange);  
+            dwelllastt = Date.now();                     
+        }
+                 
+    }
+
+    var visibilitychange=function(event){
+        if(document.visibilityState=='hidden'){
+            //start ar dwell
+            ardwell();
+            //stop ar lauch
+            artimer();
+        }else{
+            ardwell();
+        }
+    }
+
+
+
+    var openARViewer = (function () {
+        const anchor = document.createElement('a');
+        const noArViewerSigil = '#model-viewer-no-ar-fallback';
+        let fallbackInvoked = false;
+
+        return function (gltfSrc, title, onFallback) {
+            // If the fallback has ever been invoked this session, bounce early:
+            if (fallbackInvoked) {
+                if (onFallback)
+                    onFallback();
+                return;
+            }
+
+            const location = self.location.toString();
+            const locationUrl = new URL(location);
+            const modelUrl = new URL(gltfSrc, location);
+            const scheme = modelUrl.protocol.replace(':', '');
+
+            locationUrl.hash = noArViewerSigil;
+
+            let intentParams = '?file=' + encodeURIComponent(modelUrl.toString()) + '&mode=ar_preferred&link=' + location + '&title=' + encodeURIComponent(title);
+
+            //   if (arScale === 'fixed') {
+            //     intentParams += `&resizable=false`;
+            //   }
+
+            const intent = 'intent://arvr.google.com/scene-viewer/1.0' + intentParams + '#Intent;scheme=' + scheme + ';package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(locationUrl.toString()) + ';end;';
+
+            const undoHashChange = function () {
+                if (self.location.hash === noArViewerSigil && !fallbackInvoked) {
+                    fallbackInvoked = true;
+                    // The new history will be the current URL with a new hash.
+                    // Go back one step so that we reset to the expected URL.
+                    // NOTE(cdata): this should not invoke any browser-level navigation
+                    // because hash-only changes modify the URL in-place without
+                    // navigating:
+                    // if (history.length > 2)
+                    self.history.back();
+                    if (onFallback)
+                        onFallback();
+                }
+            };
+
+            self.addEventListener('hashchange', undoHashChange, { once: true });
+
+            
+
+            anchor.setAttribute('href', intent);
+            anchor.click();
+        };
+    })();
+
+    var deployArKit = function () {
+        placeBtn.setAttribute('href', arKitURL);
+        placeBtn.setAttribute('rel', 'ar');
+        placeBtn.addEventListener('click', function () {
+            if(arSupport){
+                artimer();
+                loggin('webar_click', 'webar_open');
+            }else{
+                loggin('qr_click', 'qr_open');
+            }
+        })
+    };
+
+    var deployArCore = function () {
+        placeBtn.addEventListener('click', function () {
+            if(arSupport){
+                artimer();
+                loggin('webar_click', 'webar_open');
+            }else{
+                loggin('qr_click', 'qr_open');
+            }
+            openARViewer(arCoreURL, '', function () {
+            });
+        }, false);
+    };
+
+    var deployARFallback = function () {
+        placeBtn.addEventListener('click', function () {
+            toggleQR(true);
+        }, false);
+    }
+
+    var toggleQR = function (state) {
+        if (state) {
+            document.body.classList.add('qr-modal');
+            if(arSupport){
+                artimer();
+                loggin('webar_click', 'webar_open');
+            }else{
+                loggin('qr_click', 'qr_open');
+            }
+            // ekLog({ type: 'qr', event: 'click_open' });
+        }
+        else {
+            document.body.classList.remove('qr-modal');
+            loggin('qr_click', 'qr_close');
+        }
+    }
+
+    var showAR = function () {
+        placeBtn.click();
+    };
+
+    var setQR = function () {
+        var qrPopUpContent = qrPopUpData[langCode];
+        // var arid = params['arid'];
+        document.querySelector('#ar-modal-image').src = productJSON.qr_url;
+        // if (arid !== undefined) {
+        // document.querySelector('#ar-modal-image').src = 'https://d15mv1adrb1s6e.cloudfront.net/product_settings/QRCODES/SVG/' + arid + '.svg';
+        document.querySelector('#ar-modal-title').innerHTML = qrPopUpContent.title;
+        document.querySelector('#ar-modal-main-text').innerHTML = qrPopUpContent.mainText;
+        document.querySelector('#ar-modal-button').innerHTML = qrPopUpContent.close;
+        // }
+        // else {
+        //     document.querySelector('#ar-modal-title').innerHTML = 'Missing model ID';
+        //     document.querySelector('#ar-modal-main-text').innerHTML = 'We could not find the model ID in the URL.';
+        //     document.querySelector('#ar-modal-button').innerHTML = 'Close';
+        // }
+    }
+
+    var setErrorMessages = function () {
+
+        var errModelContent = errMsgData[langCode]||errMsgData['en'];
+        
+        var qrPopUpContent = qrPopUpData[langCode];
+        document.querySelector('#error-no-model-desktop-title').innerHTML = errModelContent.exclamation + "<br />" + errModelContent.title;
+        document.querySelector('#error-no-model-desktop-desc').innerHTML = errModelContent.desc;
+        document.querySelector('#error-no-model-mobile-title').innerHTML = errModelContent.exclamation + " " + errModelContent.title;
+        document.querySelector('#error-no-model-mobile-desc').innerHTML = errModelContent.desc;
+        document.querySelector('#error-no-model-desktop-close').innerHTML = qrPopUpContent.close;
+        document.querySelector('#error-no-model-mobile-close').innerHTML = qrPopUpContent.close;
+        document.querySelector('#error-no-compat-title').innerHTML = errModelContent.exclamation + " " + errModelContent.title;
+        document.querySelector('#error-no-compat-desc').innerHTML = errModelContent.compatTitle;
+        document.querySelector('#error-no-compat-list').innerHTML = errModelContent.compatList;
+    }
+
+    var setDragMessages = function () {
+
+        //console.log(langCode)
+        var dragContent = dragdata[langCode];
+        
+        document.querySelector('.desktop_hint').innerHTML = dragContent.desktopText;
+        document.querySelector('.mobile_hint').innerHTML = dragContent.mobileText;
+    }
+
+
+    var setFS = function () {
+        fullscreenBtn.classList.remove('opacity');
+
+        var onFSToggle = function (isFS) {
+            if (isFS) {
+                hexaFS.querySelector('img').src = exitFsIcon;
+            }
+            else {
+                hexaFS.querySelector('img').src = enterFsIcon;
+            }
+        };
+
+        if (document.exitFullscreen)
+            modelWrap.addEventListener('fullscreenchange', function (event) {
+                onFSToggle(common.isFSActive());
+            });
+        else
+            modelWrap.addEventListener('webkitfullscreenchange', function (event) {
+                onFSToggle(common.isFSActive());
+            });
+        hexaFS.addEventListener('click', function () {
+            onFSToggle(!common.isFSActive());
+            var p;
+            if (common.isFSActive()) {
+                if (document.exitFullscreen)
+                    p = document.exitFullscreen();
+                else if (document.webkitExitFullscreen)
+                    p = document.webkitExitFullscreen();
+            }
+            else {
+                var rfs = modelWrap.requestFullscreen || modelWrap.mozRequestFullScreen || modelWrap.webkitRequestFullscreen || modelWrap.msRequestFullscreen;
+                p = rfs.call(modelWrap);
+            }
+            if (p) {
+                p.then(function () {
+                    onFSToggle(common.isFSActive());
+                });
+            }
+            else {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        setTimeout(function () {
+                            onFSToggle(common.isFSActive());
+                        }, 1000);
+                    });
+                });
+            }
+        }, false);
+        onFSToggle(common.isFSActive());
+    };
+
+    var toggleLoader = function (state) {
+        linearActivity.style.display = state ? 'block' : 'none';
+        flixarlogo.style.display = state ? 'block' : 'none';
+    }
+
+    var deployIcons = function () {
+
+        viewerIframe.src = productJSON.viewer_url;
+        viewerIframe.classList.remove('disp-none');
+        toggleLoader(true);
+        if (params['showWebarButton'] == 'Y' || (params['showWebarButton'] instanceof Array && params['showWebarButton'][0] == 'Y')) {
+            document.querySelector('#btn-desktop-showar-container').classList.remove('opacity');
+            if(arSupport){
+                loggin('webar_impressions', 'webar_loaded');
+                if(document.querySelector('.desktop_hint'))
+                    document.querySelector('.desktop_hint').style.display = 'none';
+                if(document.querySelector('.mobile_hint')){
+                    document.querySelector('.mobile_hint').style.display = 'block';
+                    if(document.querySelector('.desktop_mouse'))
+                        document.querySelector('.desktop_mouse').style.display = 'none';
+
+                }
+            }else{
+                loggin('qr_impression', 'qr_loaded');
+
+                if(document.querySelector('.mobile_hint')){
+                    document.querySelector('.mobile_hint').style.display = 'none';
+                }
+                if(document.querySelector('.desktop_hint'))
+                    document.querySelector('.desktop_hint').style.display = 'block';
+            }
+        }
+        
+
+        //langCode = params['l'] || 'en';
+
+        langCode=flixCheckIso(params['l']) || 'en'
+
+        
+        if (langCode) {
+            
+            btnShowAR.setAttribute('src', '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/images/AR_' + langCode.toUpperCase() + '.gif'); // '//media.pointandplace.com/hotspot/images/P%26P_90x90_' + langCode.toUpperCase() + '.gif');
+        }
+        btnDesktopShowAR.setAttribute('src', btnShowAR.getAttribute('src'));
+        var retailerConfig = retailersDictionary[params['d']] || retailersDictionary[params['d-no']] || retailersDictionary[params['distributor']];
+        if (retailerConfig) {
+            var apply = function (elem, config) {
+                for (var i in config) {
+                    if (i == 'css') {
+                        for (var j in config[i]) {
+                            elem.style[i] = config[i][j];
+                        }
+                    }
+                    else
+                        elem.setAttribute(i, config[i]);
+                }
+            };
+            if (retailerConfig.btnShowAR)
+                apply(btnShowAR, retailerConfig.btnShowAR);
+            if (retailerConfig.btnDesktopShowAR)
+                apply(btnDesktopShowAR, retailerConfig.btnDesktopShowAR);
+        }
+    };
+
+    var getEnvironmentPrefix = function () {
+        return envVar;
+        // if (isApproved)
+        //     return isQA ? 's' : 'p';
+        // else
+        //     return isQA ? 'd' : 'q';
+    }
+
+    var getProductJSON = function (cb) {
+        // cb({"lp_url": "https://ar.flix360.io/p/lp/index.html?mpn=WFR629GWKS IT&ean=8003437043284&p=1568188", "viewer_url": "https://ar.flix360.io/p/index.html?load=/p/assets/1568188.glb&autorotate=true&json-data=1596556778664&plane=0.1&le-probe=0&tv=112&hdr-blur=true&hdr=19&exp=1&hdr-intensity=0.9&watermark=1", "qr_lp_url": "https://ar.flix360.io/p/qr.html?p=1568188", "qr_url": "https://ar.flix360.io/p/qr/en/1568188.png", "ar_kit_url": "https://ar.flix360.io/p/assets/1568188.usdz", "ar_core_url": "https://ar.flix360.io/p/assets/1568188.glb"});
+        
+        if(location.href.search('localhost/lo/')!=-1){
+            fetch('http://localhost/lo/3dplayer/3dplayer/p/' + params['arid'] + '.json')
+            .then(response => response.json())
+            .then(data => cb(data));
+        }else{
+            fetch('//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/' + params['arid'] + '.json')
+            .then(response => response.json())
+            .then(data => cb(data));
+        }
+        
+    }
+
+    var init = function () {
+        params = common.getUrlParams(); 
+        
+        if(!params.arid){
+            params.arid=params.p[0];
+            if(params.p[0].length==1)
+                params.arid=params.p;
+        }
+
+        if(params.arid){          
+          
+            if(params.arid.length==2)
+                params.arid=params.arid[0];
+        }
+        
+
+        if (location.pathname.indexOf('/qr.html') > -1)
+            params['showar'] = true;
+        envVar = location.pathname.split('/')[1];
+        isQA = envVar == 'd' || envVar == 's' || window.location.host == 'localhost:9000';
+        isApproved = envVar == 'p' || envVar == 's';
+        exitFsIcon = '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/hotlink-ok/viewer/ic_fullscreen_exit_black_48dp_1x.png';
+        enterFsIcon = '//' + flixCdnDomain + '/' + getEnvironmentPrefix() + '/hotlink-ok/viewer/ic_fullscreen_black_48dp_1x.png';
+        setRetailersDictionary();
+        getProductJSON(function (json) {
+            productJSON = json;
+            for(var item in json) {
+                json[item] = (json[item]).replace('d3np41mctoibfu.cloudfront.net', window.location.hostname)
+            }
+            if (productJSON.viewer_url) {
+                productJSON.viewer_url += '&animate-enter=0'+'&l='+params['l'];
+                if (isQA)
+                    productJSON.viewer_url += '&qa-mode=1'+'&l='+params['l'];
+            }
+            window.addEventListener("message", common.onMessage.bind(this), false);
+            
+            arSupport = true;
+            arKitURL = productJSON.ar_kit_url;
+            arCoreURL = productJSON.ar_core_url;
+            if (common.isArKitSupport())
+                deployArKit()
+            else if (common.isArCoreSupport())
+                deployArCore();
+            else {
+                arSupport = false;
+                deployARFallback();
+            }
+            deployIcons();
+            setQR();
+            setErrorMessages();
+            setDragMessages();
+
+            if (params['showar'] == '1' && arSupport)
+                common.onDocReady(
+                    function () {
+                        setTimeout(function () {
+                            showAR();
+                        }, navigator.userAgent.match('CriOS') ? 100 : 0);
+                    }
+                );
+
+            if (!arSupport)
+                setFS();
+            btnShowAR.addEventListener('click', function () {
+                toggleQR(true);
+            }, false);
+            btnHideAR.addEventListener('click', function () {
+                toggleQR(false);
+            }, false);
+            btnDesktopShowAR.addEventListener('click', function () {
+                showAR();
+            }, false);
+        });
+    };
+
+
+    var errorlog=function(){
+        try {
+            window.addEventListener('error', function (err) {               
+                if (!err) return;
+                //if(err.filename && /flix(facts|car|syndication)\./g.test(err.filename)) {
+                    var det = err.colno ? 'l:' + err.lineno +', c:'+ err.colno : 'l:' + err.lineno;
+                    det+=" "+window.location.href;
+                    var i = new Image;
+                    i.src="//rt.flix360.com/jserr?f="+encodeURIComponent(err.filename)+"&d="+encodeURIComponent(det)+"&m="+encodeURIComponent(err.message);
+                    
+                    //http://rt.flix360.com/jserr?f=http%3A%2F%2Flocalhost%2Flo%2F3dplayer%2F3dplayer%2Fq%2Flp%2Fjs%2Fflix-viewer.js&d=l%3A1179%2C%20c%3A13%20http%3A%2F%2Flocalhost%2Flo%2F3dplayer%2F3dplayer%2Fq%2Flp%2Findex.html%3F&m=TypeError%3A%20params.p%20is%20undefined
+                //}
+            });
+        } catch(e){
+            this.log(e.message);
+        }
+    }
+    errorlog();
+
+    //add new tracking
+    
+    var flixdomain='https://media.flixcar.com/delivery/static/'
+        
+    if (document.referrer.search('flix-local') != -1 || location.href.search('flix-local') != -1 ) 
+            flixdomain = "//delivery.local/static/";
+    else if (document.referrer.search('live=0') != -1  ) 
+            flixdomain = "//dev-delivery.flix360.com/static/";
+    else if (document.referrer.search('delivery-alpha') != -1 || document.referrer.search('live=2') != -1  ) 
+            flixdomain='https://delivery-alpha.flix360.io/static/'
+    else if (document.referrer.search('delivery-beta') != -1 || document.referrer.search('live=3') != -1  ) 
+            flixdomain='https://delivery-beta.flix360.io/static/'
+    else if (document.referrer.search('live=4') != -1 ||  document.referrer.search('demo.flix360.io') != -1 || location.href.search('live=4') != -1) 
+        flixdomain = "https://delivery.flix360.io/static/";
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = flixdomain+"tracking/tracking.js";
+    document.head.appendChild(script);
+
+
+    //call new flixtracking if loaded
+    function flixtrack(event_type, event_description){
+        if(typeof flixtracking!='undefined'){
+            flixtracking.products.threedfw(event_type, event_description);
+        }
+        else{
+            setTimeout(function(){
+                flixtrack(event_type, event_description);
+            }, 1000);
+        }
+    }
+
+    //start loadspeed
+    threefwtimer()
+    init();
+};
+-->
